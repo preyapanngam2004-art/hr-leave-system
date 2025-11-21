@@ -11,25 +11,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// [แก้ไขแล้ว]: ทำให้ไฟล์ HTML, CSS, JS ในโฟลเดอร์ปัจจุบัน (HR_LAEVE_SYSTEM) เป็น Static Files
+// Static Files
 app.use(express.static(path.join(__dirname))); 
 
-// สร้างโฟลเดอร์ 'uploads' (ถ้ายังไม่มี)
+// Uploads Folder
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)){
     fs.mkdirSync(uploadDir);
 }
-// ทำให้โฟลเดอร์ 'uploads' เป็นสาธารณะ (เพื่อให้ดูไฟล์ได้)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// [แก้ไขแล้ว]: กำหนดหน้าแรก (Root Route) ให้เข้าสู่ login.html โดยตรง
+// Root Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 }); 
 
 
-/* === 2. DATABASE CONNECTION (เชื่อมต่อฐานข้อมูล) === */
-// [!! สำคัญ !!] ใช้ฐานข้อมูล Cloud (Clever Cloud)
+/* === 2. DATABASE CONNECTION (Clever Cloud) === */
 const pool = mysql.createPool({
     host: 'beo7a5e1cdpfctprqfrk-mysql.services.clever-cloud.com',
     user: 'utbsrjivbaog6owj',
@@ -41,23 +39,21 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (ตั้งค่าตัวส่งอีเมล) === */
-/* === 3. EMAIL TRANSPORTER (ตั้งค่าตัวส่งอีเมล - แก้ไข Timeout) === */
+/* === 3. EMAIL TRANSPORTER (ใช้ Port 465 SSL เพื่อความเสถียรบน Cloud) === */
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',  // ระบุ Server ของ Gmail ตรงๆ
-    port: 465,               // ใช้ Port 465 (SSL) ที่เสถียรกว่า
-    secure: true,            // บังคับใช้ความปลอดภัย (SSL)
+    host: 'smtp.gmail.com', 
+    port: 465,               // ใช้ Port 465 (SSL)
+    secure: true,            // เปิด Secure
     auth: {
         user: 'preyapanngam2004@gmail.com', 
         pass: 'cptb uofw usdf hqiq' 
     },
-    // เพิ่มการตั้งค่า Timeout ให้รอนานขึ้นอีกนิดเผื่อเน็ตช้า
-    connectionTimeout: 10000, // 10 วินาที
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    // เพิ่ม Timeout ป้องกัน Error
+    connectionTimeout: 10000, 
+    greetingTimeout: 10000
 });
 
-// [!! เพิ่ม !!] ตั้งค่า Multer (เครื่องมือรับไฟล์)
+// Multer setup
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/');
@@ -70,9 +66,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 
-/* === 4. API ENDPOINTS (จุดเชื่อมต่อ API) === */
+/* === 4. API ENDPOINTS === */
 
-// --- API 1: ล็อกอิน (Login) ---
+// --- API 1: Login ---
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -92,7 +88,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// --- API 2: โหลดรายการรออนุมัติ (สำหรับหัวหน้า) ---
+// --- API 2: Pending Requests ---
 app.get('/api/pending-requests/:managerId', async (req, res) => {
     try {
         const { managerId } = req.params; 
@@ -114,42 +110,52 @@ app.get('/api/pending-requests/:managerId', async (req, res) => {
     }
 });
 
-// --- API 3: อนุมัติ / ปฏิเสธ (หัวหน้ากด) ---
+// --- API 3: Approve/Reject (แก้ให้ส่งเมลเบื้องหลัง) ---
 app.post('/api/process-request', async (req, res) => {
     const { requestId, newStatus } = req.body; 
     try {
+        // 1. อัปเดต DB ก่อน
         await pool.query(
             "UPDATE leaverequests SET Status = ?, ApprovalDate = NOW() WHERE Request_ID = ?",
             [newStatus, requestId]
         );
-        const [rows] = await pool.query(`
-            SELECT e.Email, e.FirstName, lt.TypeName
-            FROM leaverequests lr
-            JOIN employees e ON lr.Emp_ID = e.Emp_ID
-            JOIN leavetypes lt ON lr.LeaveType_ID = lt.LeaveType_ID
-            WHERE lr.Request_ID = ?
-        `, [requestId]);
 
-        if (rows.length > 0) {
-            const employee = rows[0];
-            const statusInThai = newStatus === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ';
-            const mailOptions = {
-                from: '"ระบบลางาน" <preyapanngam2004@gmail.com>', 
-                to: employee.Email, 
-                subject: `[ผลการอนุมัติ] ใบลาของคุณ "${statusInThai}" แล้ว`,
-                html: `<h3>เรียน คุณ ${employee.FirstName},</h3><p>ใบลา (${employee.TypeName}) ของคุณ ได้รับการ <strong>${statusInThai}</strong> แล้ว</p>`
-            };
-            transporter.sendMail(mailOptions).catch(err => console.error("Send mail error:", err));
-        }
+        // 2. ตอบกลับทันที (ไม่รอเมล)
         res.json({ message: `ดำเนินการ "${newStatus}" สำเร็จ` });
+
+        // 3. ส่งเมลเบื้องหลัง
+        (async () => {
+            try {
+                const [rows] = await pool.query(`
+                    SELECT e.Email, e.FirstName, lt.TypeName
+                    FROM leaverequests lr
+                    JOIN employees e ON lr.Emp_ID = e.Emp_ID
+                    JOIN leavetypes lt ON lr.LeaveType_ID = lt.LeaveType_ID
+                    WHERE lr.Request_ID = ?
+                `, [requestId]);
+
+                if (rows.length > 0) {
+                    const employee = rows[0];
+                    const statusInThai = newStatus === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ';
+                    await transporter.sendMail({
+                        from: '"ระบบลางาน" <preyapanngam2004@gmail.com>', 
+                        to: employee.Email, 
+                        subject: `[ผลการอนุมัติ] ใบลาของคุณ "${statusInThai}" แล้ว`,
+                        html: `<h3>เรียน คุณ ${employee.FirstName},</h3><p>ใบลา (${employee.TypeName}) ของคุณ ได้รับการ <strong>${statusInThai}</strong> แล้ว</p>`
+                    });
+                    console.log('Email sent to employee');
+                }
+            } catch (err) { console.error('Email Error:', err); }
+        })();
+
     } catch (error) {
         console.error("Process API Error:", error);
-        res.status(500).json({ message: 'Server Error: ' + error.message });
+        if (!res.headersSent) res.status(500).json({ message: 'Server Error: ' + error.message });
     }
 });
 
 
-// --- API 4: ยื่นใบลา (แบบรับไฟล์ได้) ---
+// --- API 4: Submit Leave (แก้ให้ส่งเมลเบื้องหลัง) ---
 app.post('/api/submit-leave', upload.single('attachmentFile'), async (req, res) => {
     
     const { empId, leaveType, startDate, endDate, reason, managerId } = req.body;
@@ -165,33 +171,43 @@ app.post('/api/submit-leave', upload.single('attachmentFile'), async (req, res) 
             return res.status(400).json({ message: 'ใบลาไม่พอ หรือ ไม่พบโควต้าสำหรับปีนี้' });
         }
         
+        // 1. บันทึกลง DB
         await pool.query(
             "INSERT INTO leaverequests (Emp_ID, LeaveType_ID, StartDate, EndDate, Reason, Approver_ID, Status, AttachmentFile) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?)",
             [empId, leaveType, startDate, endDate, reason, managerId, attachmentPath]
         );
 
-        const [approverRows] = await pool.query("SELECT Email, FirstName FROM employees WHERE Emp_ID = ?", [managerId]);
-        const [employeeRows] = await pool.query("SELECT FirstName, LastName FROM employees WHERE Emp_ID = ?", [empId]);
-        if (approverRows.length > 0 && employeeRows.length > 0) {
-            const approver = approverRows[0];
-            const employeeName = `${employeeRows[0].FirstName} ${employeeRows[0].LastName}`;
-            const mailOptions = {
-                from: '"ระบบลางาน" <preyapanngam2004@gmail.com>',
-                to: approver.Email, 
-                subject: `มีคำขออนุมัติใบลาใหม่จาก: ${employeeName}`,
-                html: `<h3>เรียน คุณ ${approver.FirstName},</h3><p>มีคำขอใบลาใหม่จาก <strong>${employeeName}</strong> รอการอนุมัติ</p>`
-            };
-            transporter.sendMail(mailOptions).catch(err => console.error("Send mail error:", err));
-        }
-
+        // 2. ตอบกลับทันที (ไม่รอเมล)
         res.json({ message: 'ส่งใบลาสำเร็จ!' });
+
+        // 3. ส่งเมลหาหัวหน้าเบื้องหลัง
+        (async () => {
+            try {
+                const [approverRows] = await pool.query("SELECT Email, FirstName FROM employees WHERE Emp_ID = ?", [managerId]);
+                const [employeeRows] = await pool.query("SELECT FirstName, LastName FROM employees WHERE Emp_ID = ?", [empId]);
+                
+                if (approverRows.length > 0 && employeeRows.length > 0) {
+                    const approver = approverRows[0];
+                    const employeeName = `${employeeRows[0].FirstName} ${employeeRows[0].LastName}`;
+                    
+                    await transporter.sendMail({
+                        from: '"ระบบลางาน" <preyapanngam2004@gmail.com>',
+                        to: approver.Email, 
+                        subject: `มีคำขออนุมัติใบลาใหม่จาก: ${employeeName}`,
+                        html: `<h3>เรียน คุณ ${approver.FirstName},</h3><p>มีคำขอใบลาใหม่จาก <strong>${employeeName}</strong> รอการอนุมัติ <br>กรุณาตรวจสอบในระบบ</p>`
+                    });
+                    console.log('Email sent to manager');
+                }
+            } catch (err) { console.error('Email Error:', err); }
+        })();
+
     } catch (error) {
         console.error("Submit Leave Error:", error);
-        res.status(500).json({ message: 'Server Error: ' + error.message });
+        if (!res.headersSent) res.status(500).json({ message: 'Server Error: ' + error.message });
     }
 });
 
-// --- API 5: โหลดประวัติการลา (ของพนักงาน) ---
+// --- API 5: Leave History ---
 app.get('/api/leave-history/:empId', async (req, res) => {
     try {
         const { empId } = req.params;
@@ -209,7 +225,7 @@ app.get('/api/leave-history/:empId', async (req, res) => {
     }
 });
 
-// --- API 6: โหลดรายงาน (สำหรับหน้า report.html) ---
+// --- API 6: Report ---
 app.get('/api/report', async (req, res) => {
     try {
         const { startDate, endDate, deptId, leaveTypeId, status } = req.query;
@@ -240,7 +256,7 @@ app.get('/api/report', async (req, res) => {
     }
 });
 
-// --- API 7: โหลดโควต้า (สำหรับ dashboard) (ฉบับ Dynamic) ---
+// --- API 7: Quotas ---
 app.get('/api/quotas/:empId', async (req, res) => {
     try {
         const { empId } = req.params;
@@ -261,8 +277,8 @@ app.get('/api/quotas/:empId', async (req, res) => {
     }
 });
 
-// [!! แก้ไขแล้ว !!] ใช้ process.env.PORT เพื่อให้รองรับ Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
