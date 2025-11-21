@@ -39,18 +39,18 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (สูตรบังคับ SSL + IPv4) === */
+/* === 3. EMAIL TRANSPORTER (สูตร Final: Gmail Service + บังคับ IPv4) === */
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // ใช้ service เพื่อให้ nodemailer จัดการค่า config ให้เอง
+    service: 'gmail',  // ให้ระบบตั้งค่า Port ให้อัตโนมัติ
     auth: {
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS
     },
-    // เพิ่ม option เพื่อแก้ปัญหา network
+    // เพิ่ม 2 บรรทัดนี้เพื่อแก้ปัญหา Render หา Gmail ไม่เจอ
     tls: {
-        rejectUnauthorized: false // ยอมรับ certificate ทุกแบบ
+        rejectUnauthorized: false // ยอมรับความปลอดภัยระดับ Cloud
     },
-    family: 4 // บังคับ IPv4
+    family: 4 // บังคับใช้ IPv4 (สำคัญมาก! เพราะ Render ชอบหลงไปใช้ IPv6 แล้วค้าง)
 });
 
 // Multer setup
@@ -281,6 +281,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
 
 
 
