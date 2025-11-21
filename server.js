@@ -39,19 +39,25 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (ใช้ Port 465 SSL เพื่อความเสถียรบน Cloud) === */
+/* === 3. EMAIL TRANSPORTER (สูตรแก้ Timeout: ใช้ Port 587 + บังคับ IPv4) === */
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', 
-    port: 465,               // ใช้ Port 465 (SSL)
-    secure: true,            // เปิด Secure
+    host: 'smtp.gmail.com',
+    port: 587,                 // เปลี่ยนมาใช้ 587 (TLS) ซึ่งปัญหาน้อยกว่าบน Cloud
+    secure: false,             // สำหรับ Port 587 ต้องเป็น false
+    requireTLS: true,          // บังคับใช้การเข้ารหัส
     auth: {
         user: 'preyapanngam2004@gmail.com', 
         pass: 'cptb uofw usdf hqiq' 
     },
-    // เพิ่ม Timeout ป้องกัน Error
-    connectionTimeout: 10000, 
-    greetingTimeout: 10000
+    // [สำคัญมาก] การตั้งค่าเพื่อแก้ปัญหา Network Timeout
+    tls: {
+        ciphers: 'SSLv3',      // ช่วยเรื่องการเข้ารหัสรุ่นเก่า
+        rejectUnauthorized: false
+    },
+    family: 4,                 // **ไม้ตาย:** บังคับใช้ IPv4 เท่านั้น (แก้ปัญหา Render หา Gmail ไม่เจอ)
+    connectionTimeout: 10000   // รอ 10 วินาที
 });
+
 
 // Multer setup
 const storage = multer.diskStorage({
@@ -281,4 +287,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
 
