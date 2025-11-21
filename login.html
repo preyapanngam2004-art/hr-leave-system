@@ -29,6 +29,7 @@
     // [!! นี่คือ Base URL ที่แก้ไขแล้ว: ใช้ Public URL ของ ngrok (HTTPS) !!]
     // โค้ดนี้จะใช้ได้ก็ต่อเมื่อ ngrok กำลังรันอยู่บนคอมพิวเตอร์ของคุณ
     const API_BASE_URL = '';
+    const manager = JSON.parse(localStorage.getItem('user'));
 
     document.getElementById('loginForm').addEventListener('submit', async function(event) {
         event.preventDefault(); 
@@ -78,4 +79,5 @@
 </script>
 
 </body>
+
 </html>
