@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
 
 
 /* === 2. DATABASE CONNECTION (เชื่อมต่อฐานข้อมูล) === */
-// [!! สำคัญ !!] ใส่รหัสผ่าน MySQL (XAMPP) ของคุณ
+// [!! สำคัญ !!] ใช้ฐานข้อมูล Cloud (Clever Cloud)
 const pool = mysql.createPool({
     host: 'beo7a5e1cdpfctprqfrk-mysql.services.clever-cloud.com',
     user: 'utbsrjivbaog6owj',
@@ -39,16 +39,14 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-    // ...
 });
 
 /* === 3. EMAIL TRANSPORTER (ตั้งค่าตัวส่งอีเมล) === */
-// [!! สำคัญ !!] คุณต้องใช้ "App Password" 16 หลัก จาก Gmail
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'preyapanngam2004@gmail.com', // <-- (ใส่อีเมลของคุณ)
-        pass: 'cptb uofw usdf hqiq' // <-- (ใส่ App Password 16 หลัก)
+        user: 'preyapanngam2004@gmail.com', 
+        pass: 'cptb uofw usdf hqiq' 
     }
 });
 
@@ -256,8 +254,8 @@ app.get('/api/quotas/:empId', async (req, res) => {
     }
 });
 
-const PORT = 3000;
-// Server เปิดรับทุกการเชื่อมต่อภายนอก
+// [!! แก้ไขแล้ว !!] ใช้ process.env.PORT เพื่อให้รองรับ Render
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
