@@ -205,9 +205,9 @@ table tr:hover {
     color: #007bff;
 }
 
-/* 5. ฟอร์มยื่นลา (Modal) */
+/* 5. ฟอร์มยื่นลา (Modal) - ค่าเริ่มต้นสำหรับ Desktop */
 .modal-overlay {
-    display: none; /* ซ่อนไว้ก่อน */
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -215,6 +215,7 @@ table tr:hover {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 99;
+    overflow-y: auto; /* อนุญาตให้สกรอลล์ที่ overlay ได้ถ้าจำเป็น */
 }
 
 .modal-content {
@@ -238,100 +239,95 @@ table tr:hover {
     margin-bottom: 20px;
 }
 
-/* === 7. Responsive Adjustments (ฉบับย่อฟอนต์ + กะทัดรัด) === */
+/* === 7. Responsive Adjustments (ปรับให้เหมือน Desktop บนมือถือ + แก้ไข Modal) === */
 
-/* กฎสำหรับจัดการตาราง (เลื่อนซ้ายขวาได้) */
+/* กฎสำหรับจัดการตาราง */
 .table-responsive {
     overflow-x: auto;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     -webkit-overflow-scrolling: touch;
     border: 1px solid #eee;
     border-radius: 4px;
-    background: white;
 }
 
 /* กฎสำหรับหน้าจอขนาดเล็ก (มือถือ) */
 @media (max-width: 768px) {
     
-    /* 1. ลดขนาดฟอนต์พื้นฐานทั้งหน้า */
-    body {
-        font-size: 14px; /* ปกติในคอม 16px ลดเหลือ 14px */
-    }
-
-    /* 2. ปรับ Navbar ให้เล็กและเรียบเนียน */
+    /* 1. ปรับ Navbar (ให้คล้าย Desktop) */
     .navbar {
         flex-direction: column;
-        padding: 10px 5px; /* ลดขอบรอบๆ */
-        min-height: auto;
+        padding: 10px;
+        align-items: center;
     }
 
     .navbar .logo {
-        font-size: 1.2rem; /* ย่อโลโก้ลงหน่อย */
-        margin-bottom: 5px;
+        margin-bottom: 10px;
+        font-size: 1.3rem;
     }
 
     .navbar nav {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 5px; /* ลดระยะห่างระหว่างเมนู */
+        gap: 15px;
         width: 100%;
+        margin-top: 0;
     }
 
     .navbar nav a {
-        font-size: 0.85rem; /* ฟอนต์เมนูเล็กลง (ประมาณ 13px) */
-        padding: 4px 8px;   /* ลดความอ้วนของปุ่ม */
+        display: inline-block;
         margin: 0;
-        border-radius: 4px;
-        background-color: rgba(255,255,255,0.1); /* พื้นหลังจางๆ ให้รู้ขอบเขต */
+        padding: 5px;
+        color: #fff;
+        font-size: 0.9rem;
+        background-color: transparent;
+        border: none;
     }
 
-    /* 3. ปรับ Container และหัวข้อ */
+    /* 2. ปรับ Container */
     .container {
         padding: 10px;
-    }
-    
-    h2 {
-        font-size: 1.3rem; /* ย่อหัวข้อลง */
-        margin-bottom: 15px;
+        width: 100%;
     }
 
-    .card {
-        padding: 15px; /* ลดขอบในการ์ด */
-    }
-
-    /* 4. ตารางฉบับย่อส่วน (Compact Table) */
+    /* 3. บังคับตารางให้หน้าตาเหมือนเดิม (เลื่อนซ้ายขวาได้) */
     .table-responsive table {
-        min-width: 600px; /* ลดความกว้างขั้นต่ำลงนิดนึง เพราะฟอนต์เล็กแล้ว */
+        min-width: 700px;
     }
 
     .table-responsive th, 
     .table-responsive td {
-        padding: 8px 6px;  /* ลดช่องว่างในตารางให้ชิดกันมากขึ้น */
-        font-size: 12px;   /* ย่อฟอนต์ในตารางให้เล็ก (อ่านง่าย ไม่เปลืองที่) */
+        white-space: nowrap;
+        padding: 12px;
+        font-size: 14px;
     }
 
-    .btn-approve, .btn-reject {
-        font-size: 11px;   /* ย่อปุ่มกดในตาราง */
-        padding: 3px 6px;
+    /* 4. [!! แก้ไขสำคัญ !!] ปรับ Modal ให้เลื่อนได้สะดวก ไม่ตกขอบ */
+    .modal-content {
+        position: relative; /* เปลี่ยนจาก absolute เพื่อให้เลื่อนได้ */
+        top: auto;
+        left: auto;
+        transform: none;    /* ยกเลิกการจัดกึ่งกลางแบบตายตัว */
+        
+        margin: 40px auto;  /* จัดกึ่งกลางแนวนอน + เว้นขอบบนล่าง */
+        width: 95%;         /* กว้างเกือบเต็มจอ */
+        padding: 20px;      /* ลด padding นิดหน่อยให้มีที่เนื้อหา */
+        
+        /* เพิ่มขอบล่างเยอะๆ เผื่อแป้นพิมพ์มือถือบังปุ่ม */
+        padding-bottom: 80px; 
     }
 
-    /* 5. ปรับกล่องโควต้าวันลา */
+    /* ปรับปุ่มปิดให้ห่างออกมาหน่อย */
+    #closeLeaveModalBtn {
+        margin-top: 15px;
+    }
+
+    /* 5. ปรับส่วน Dashboard Quota */
     .quota-container {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); /* เรียง 2 กล่องคู่กัน */
-        gap: 10px;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
-    
     .quota-box {
-        padding: 10px;
-    }
-    
-    .quota-box h3 {
-        font-size: 0.9rem;
-    }
-    
-    .quota-box .days {
-        font-size: 1.5rem; /* ย่อตัวเลขวันลา */
+        min-width: 45%;
     }
 }
