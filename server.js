@@ -42,12 +42,19 @@ const pool = mysql.createPool({
 });
 
 /* === 3. EMAIL TRANSPORTER (ตั้งค่าตัวส่งอีเมล) === */
+/* === 3. EMAIL TRANSPORTER (ตั้งค่าตัวส่งอีเมล - แก้ไข Timeout) === */
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',  // ระบุ Server ของ Gmail ตรงๆ
+    port: 465,               // ใช้ Port 465 (SSL) ที่เสถียรกว่า
+    secure: true,            // บังคับใช้ความปลอดภัย (SSL)
     auth: {
         user: 'preyapanngam2004@gmail.com', 
         pass: 'cptb uofw usdf hqiq' 
-    }
+    },
+    // เพิ่มการตั้งค่า Timeout ให้รอนานขึ้นอีกนิดเผื่อเน็ตช้า
+    connectionTimeout: 10000, // 10 วินาที
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 // [!! เพิ่ม !!] ตั้งค่า Multer (เครื่องมือรับไฟล์)
