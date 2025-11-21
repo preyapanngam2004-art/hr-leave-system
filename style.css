@@ -237,9 +237,10 @@ table tr:hover {
     gap: 20px;
     margin-bottom: 20px;
 }
+
 /* === 7. Responsive Adjustments (การปรับให้ตอบสนอง) === */
 
-/* กฎสำหรับจัดการตารางที่ล้นในแนวนอน */
+/* กฎสำหรับจัดการตารางที่ล้นในแนวนอน (ต้องมี div.table-responsive ห่อ table) */
 .table-responsive {
     overflow-x: auto; /* ทำให้เกิด Scrollbar แนวนอนเมื่อตารางกว้างเกินไป */
     margin-bottom: 20px;
@@ -270,19 +271,14 @@ table tr:hover {
         display: inline-block; /* จัดเมนูให้อยู่ในแถวเดียวกันบนมือถือ */
     }
 
-    /* 3. จัดการตาราง (สำคัญมาก) */
-    table {
-        min-width: 600px; /* กำหนดความกว้างขั้นต่ำ เพื่อไม่ให้ข้อความเบียดกันเกินไป */
-    }
-
-    /* 4. ปรับส่วน Login/Modal */
+    /* 3. ปรับส่วน Login/Modal */
     .login-container,
     .modal-content {
         margin: 50px auto; /* ลด margin ด้านบน */
         width: 95%;
     }
 
-    /* 5. ปรับส่วน Dashboard Quota */
+    /* 4. ปรับส่วน Dashboard Quota */
     .quota-container {
         flex-direction: column; /* เรียง Quota Box เป็นแนวตั้ง */
     }
@@ -291,8 +287,51 @@ table tr:hover {
         min-width: 100%;
     }
 
-    /* 6. ปรับ Filter Container สำหรับหน้า Report */
+    /* 5. ปรับ Filter Container สำหรับหน้า Report */
     .filter-container {
         grid-template-columns: 1fr; /* ให้แสดงผลทีละช่อง แทนที่จะเป็นหลายคอลัมน์ */
+    }
+
+    /* === 8. Mobile Table Fix (จัดตารางให้สวยในมือถือ) === */
+    
+    /* บังคับให้ตารางกว้างกว่าหน้าจอ เพื่อให้เลื่อนซ้ายขวาได้ ไม่บีบตัวหนังสือ */
+    .table-responsive table {
+        min-width: 600px !important; 
+    }
+
+    /* จัดระเบียบช่องตาราง */
+    .table-responsive th, 
+    .table-responsive td {
+        white-space: nowrap; /* ห้ามตัดบรรทัด (ชื่อจะไม่ตกบรรทัด) */
+        padding: 15px 10px;  /* เพิ่มช่องว่างให้น่าอ่าน */
+        vertical-align: middle; /* จัดให้อยู่กึ่งกลางแนวตั้ง */
+        font-size: 14px;     /* ขนาดตัวอักษรกำลังดี */
+    }
+
+    /* จัดชื่อพนักงานให้ชิดซ้ายและทำตัวหนา */
+    .table-responsive td:nth-child(1) {
+        text-align: left;
+        font-weight: bold;
+        color: #007bff; /* ใส่สีน้ำเงินให้ชื่อดูเด่น */
+    }
+
+    /* จัดคอลัมน์อื่นๆ ให้อยู่กึ่งกลาง */
+    .table-responsive td:not(:first-child),
+    .table-responsive th:not(:first-child) {
+        text-align: center;
+    }
+
+    /* ตกแต่งหัวตาราง */
+    .table-responsive th {
+        background-color: #f8f9fa;
+        color: #555;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+    
+    /* ทำสีสลับบรรทัด */
+    .table-responsive tr:nth-child(even) {
+        background-color: #fcfcfc;
     }
 }
