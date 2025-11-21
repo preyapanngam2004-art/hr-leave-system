@@ -39,26 +39,19 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (สูตรสมบูรณ์: ใช้ Environment Variables + แก้ Timeout) === */
+/* === 3. EMAIL TRANSPORTER (สูตรบังคับ SSL + IPv4) === */
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // ต้องเป็น false สำหรับ port 587
-    requireTLS: true,
+    service: 'gmail', // ใช้ service เพื่อให้ nodemailer จัดการค่า config ให้เอง
     auth: {
-        // ดึงค่าจาก Render (ที่คุณเพิ่งกรอกไป)
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS
     },
+    // เพิ่ม option เพื่อแก้ปัญหา network
     tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
+        rejectUnauthorized: false // ยอมรับ certificate ทุกแบบ
     },
-    // [สำคัญมาก] บรรทัดนี้ช่วยให้ Render หา Gmail เจอ
-    family: 4,                 
-    connectionTimeout: 10000   
+    family: 4 // บังคับ IPv4
 });
-
 
 // Multer setup
 const storage = multer.diskStorage({
@@ -288,6 +281,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
 
 
 
