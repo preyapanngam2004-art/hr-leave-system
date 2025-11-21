@@ -238,90 +238,101 @@ table tr:hover {
     margin-bottom: 20px;
 }
 
-/* === 7. Responsive Adjustments (การปรับให้ตอบสนอง) === */
+/* === 7. Responsive Adjustments (ปรับปรุงการแสดงผลบนมือถือ) === */
 
-/* กฎสำหรับจัดการตารางที่ล้นในแนวนอน (ต้องมี div.table-responsive ห่อ table) */
+/* กฎสำหรับจัดการตารางที่ล้นในแนวนอน */
 .table-responsive {
-    overflow-x: auto; /* ทำให้เกิด Scrollbar แนวนอนเมื่อตารางกว้างเกินไป */
+    overflow-x: auto;
     margin-bottom: 20px;
-    -webkit-overflow-scrolling: touch; /* ปรับปรุงการเลื่อนบน iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
-/* กฎที่ใช้เมื่อหน้าจอมีความกว้างไม่เกิน 768px (Mobile & Tablet) */
+/* --- เริ่มส่วนที่แก้ไขสำหรับการแสดงผลบนมือถือ --- */
 @media (max-width: 768px) {
-    /* 1. ปรับขนาดคอนเทนเนอร์หลัก */
-    .container {
-        padding: 10px; /* ลด padding ลง */
-    }
     
-    /* 2. ปรับ Navbar (เมนูนำทาง) */
+    /* 1. จัดระเบียบ Navbar ใหม่ (ให้เป็นแนวตั้งสวยๆ) */
     .navbar {
-        flex-direction: column; /* เปลี่ยนจากแนวนอนเป็นแนวตั้ง */
-        padding: 10px 15px; /* ลด padding */
+        flex-direction: column; /* เรียงองค์ประกอบลงมาแนวตั้ง */
+        padding: 20px;          /* เพิ่มพื้นที่รอบๆ */
+        align-items: center;    /* จัดกึ่งกลาง */
+    }
+
+    .navbar .logo {
+        margin-bottom: 15px;    /* เว้นระยะห่างโลโก้กับเมนู */
+        font-size: 1.4rem;      /* ขยายโลโก้ให้อ่านง่าย */
+        text-align: center;
     }
 
     .navbar nav {
-        margin-top: 10px;
-        text-align: center;
-        width: 100%;
+        display: flex;
+        flex-direction: column; /* บังคับลิงก์เรียงเป็นชั้นๆ */
+        width: 100%;            /* ความกว้างเต็มจอ */
+        gap: 8px;               /* ระยะห่างระหว่างปุ่ม */
+        margin-top: 0;          /* ลบระยะเดิม */
     }
 
     .navbar nav a {
-        margin: 5px 10px;
-        display: inline-block; /* จัดเมนูให้อยู่ในแถวเดียวกันบนมือถือ */
+        display: block;                 /* ให้เป็นบล็อกเต็มบรรทัด */
+        margin: 0;                      /* ลบ margin เดิม */
+        padding: 12px;                  /* เพิ่มพื้นที่กดให้ใช้นิ้วจิ้มง่าย */
+        text-align: center;             /* ตัวหนังสืออยู่ตรงกลาง */
+        background-color: rgba(255, 255, 255, 0.15); /* ใส่พื้นหลังจางๆ ให้ดูเป็นปุ่ม */
+        border-radius: 8px;             /* มุมโค้งมน */
+        color: #fff;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: background-color 0.2s; /* เอฟเฟกต์ตอนกด */
+    }
+
+    .navbar nav a:active {
+        background-color: rgba(255, 255, 255, 0.3); /* เปลี่ยนสีตอนเอานิ้วแตะ */
+    }
+
+    /* 2. ปรับระยะห่าง Container หลัก */
+    .container {
+        padding: 15px;
     }
 
     /* 3. ปรับส่วน Login/Modal */
-    .login-container,
-    .modal-content {
-        margin: 50px auto; /* ลด margin ด้านบน */
-        width: 95%;
+    .login-container, .modal-content {
+        margin: 40px auto;
+        width: 90%;
     }
 
-    /* 4. ปรับส่วน Dashboard Quota */
+    /* 4. ปรับ Dashboard Quota */
     .quota-container {
-        flex-direction: column; /* เรียง Quota Box เป็นแนวตั้ง */
+        flex-direction: column;
     }
-
     .quota-box {
         min-width: 100%;
     }
 
-    /* 5. ปรับ Filter Container สำหรับหน้า Report */
+    /* 5. ปรับ Filter หน้า Report */
     .filter-container {
-        grid-template-columns: 1fr; /* ให้แสดงผลทีละช่อง แทนที่จะเป็นหลายคอลัมน์ */
+        grid-template-columns: 1fr;
     }
 
-    /* === 8. Mobile Table Fix (จัดตารางให้สวยในมือถือ) === */
-    
-    /* บังคับให้ตารางกว้างกว่าหน้าจอ เพื่อให้เลื่อนซ้ายขวาได้ ไม่บีบตัวหนังสือ */
+    /* === Mobile Table Fix (คงไว้เหมือนเดิมเพื่อให้ตารางสวย) === */
     .table-responsive table {
         min-width: 600px !important; 
     }
-
-    /* จัดระเบียบช่องตาราง */
-    .table-responsive th, 
-    .table-responsive td {
-        white-space: nowrap; /* ห้ามตัดบรรทัด (ชื่อจะไม่ตกบรรทัด) */
-        padding: 15px 10px;  /* เพิ่มช่องว่างให้น่าอ่าน */
-        vertical-align: middle; /* จัดให้อยู่กึ่งกลางแนวตั้ง */
-        font-size: 14px;     /* ขนาดตัวอักษรกำลังดี */
+    .table-responsive th, .table-responsive td {
+        white-space: nowrap;
+        padding: 15px 10px;
+        vertical-align: middle;
+        font-size: 14px;
     }
-
-    /* จัดชื่อพนักงานให้ชิดซ้ายและทำตัวหนา */
+    /* ชื่อพนักงานสีน้ำเงิน */
     .table-responsive td:nth-child(1) {
         text-align: left;
         font-weight: bold;
-        color: #007bff; /* ใส่สีน้ำเงินให้ชื่อดูเด่น */
+        color: #007bff;
     }
-
-    /* จัดคอลัมน์อื่นๆ ให้อยู่กึ่งกลาง */
+    /* จัดกลางคอลัมน์อื่น */
     .table-responsive td:not(:first-child),
     .table-responsive th:not(:first-child) {
         text-align: center;
     }
-
-    /* ตกแต่งหัวตาราง */
     .table-responsive th {
         background-color: #f8f9fa;
         color: #555;
@@ -329,8 +340,6 @@ table tr:hover {
         font-size: 12px;
         letter-spacing: 0.5px;
     }
-    
-    /* ทำสีสลับบรรทัด */
     .table-responsive tr:nth-child(even) {
         background-color: #fcfcfc;
     }
