@@ -238,77 +238,100 @@ table tr:hover {
     margin-bottom: 20px;
 }
 
-/* === 7. Responsive Adjustments (ปรับให้เหมือน Desktop บนมือถือ) === */
+/* === 7. Responsive Adjustments (ฉบับย่อฟอนต์ + กะทัดรัด) === */
 
-/* กฎสำหรับจัดการตาราง (ให้เลื่อนซ้ายขวาได้ แต่หน้าตาเหมือนคอม) */
+/* กฎสำหรับจัดการตาราง (เลื่อนซ้ายขวาได้) */
 .table-responsive {
     overflow-x: auto;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     -webkit-overflow-scrolling: touch;
-    border: 1px solid #eee; /* เพิ่มขอบให้ดูเรียบร้อย */
+    border: 1px solid #eee;
     border-radius: 4px;
+    background: white;
 }
 
 /* กฎสำหรับหน้าจอขนาดเล็ก (มือถือ) */
 @media (max-width: 768px) {
     
-    /* 1. ปรับ Navbar (ให้คล้าย Desktop ที่สุด) */
+    /* 1. ลดขนาดฟอนต์พื้นฐานทั้งหน้า */
+    body {
+        font-size: 14px; /* ปกติในคอม 16px ลดเหลือ 14px */
+    }
+
+    /* 2. ปรับ Navbar ให้เล็กและเรียบเนียน */
     .navbar {
-        flex-direction: column; /* ให้โลโก้อยู่บรรทัดบน เมนูอยู่บรรทัดล่าง */
-        padding: 10px;
-        align-items: center;
+        flex-direction: column;
+        padding: 10px 5px; /* ลดขอบรอบๆ */
+        min-height: auto;
     }
 
     .navbar .logo {
-        margin-bottom: 10px; /* เว้นระยะห่างนิดหน่อย */
-        font-size: 1.3rem;
+        font-size: 1.2rem; /* ย่อโลโก้ลงหน่อย */
+        margin-bottom: 5px;
     }
 
     .navbar nav {
-        display: flex;          /* เรียงเมนูเป็นแนวนอน! (เหมือน Desktop) */
-        flex-wrap: wrap;        /* ถ้าจอเล็กมากให้ปัดลงบรรทัดใหม่ได้ */
-        justify-content: center; /* จัดกึ่งกลาง */
-        gap: 15px;              /* ระยะห่างระหว่างเมนู */
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px; /* ลดระยะห่างระหว่างเมนู */
         width: 100%;
-        margin-top: 0;
     }
 
     .navbar nav a {
-        /* คงรูปแบบลิงก์ตัวหนังสือเหมือน Desktop (ไม่ทำเป็นปุ่มใหญ่ๆ) */
-        display: inline-block;
+        font-size: 0.85rem; /* ฟอนต์เมนูเล็กลง (ประมาณ 13px) */
+        padding: 4px 8px;   /* ลดความอ้วนของปุ่ม */
         margin: 0;
-        padding: 5px;
-        color: #fff;
-        font-size: 0.9rem; /* ลดขนาดตัวอักษรลงนิดนึงให้พอดีจอ */
-        background-color: transparent; /* เอาพื้นหลังออก */
-        border: none;
+        border-radius: 4px;
+        background-color: rgba(255,255,255,0.1); /* พื้นหลังจางๆ ให้รู้ขอบเขต */
     }
 
-    /* 2. ปรับ Container */
+    /* 3. ปรับ Container และหัวข้อ */
     .container {
         padding: 10px;
-        width: 100%; /* เต็มจอ */
+    }
+    
+    h2 {
+        font-size: 1.3rem; /* ย่อหัวข้อลง */
+        margin-bottom: 15px;
     }
 
-    /* 3. บังคับตารางให้หน้าตาเหมือนเดิม (ไม่บีบ) */
+    .card {
+        padding: 15px; /* ลดขอบในการ์ด */
+    }
+
+    /* 4. ตารางฉบับย่อส่วน (Compact Table) */
     .table-responsive table {
-        min-width: 700px; /* บังคับความกว้างขั้นต่ำ (เพื่อให้ตารางคงรูปสวยเหมือนคอม) */
-        /* ผู้ใช้จะต้องเลื่อนนิ้วซ้าย-ขวาเพื่อดูข้อมูลที่เหลือ */
+        min-width: 600px; /* ลดความกว้างขั้นต่ำลงนิดนึง เพราะฟอนต์เล็กแล้ว */
     }
 
     .table-responsive th, 
     .table-responsive td {
-        white-space: nowrap; /* ห้ามตัดคำตกบรรทัด (ชื่อจะยาวสวยเหมือนเดิม) */
-        padding: 12px;       /* ช่องไฟสวยงาม */
-        font-size: 14px;
+        padding: 8px 6px;  /* ลดช่องว่างในตารางให้ชิดกันมากขึ้น */
+        font-size: 12px;   /* ย่อฟอนต์ในตารางให้เล็ก (อ่านง่าย ไม่เปลืองที่) */
     }
 
-    /* ปรับส่วนอื่นๆ เล็กน้อย */
-    .quota-container {
-        flex-direction: row; /* เรียงแนวนอนเหมือนเดิม */
-        flex-wrap: wrap;     /* ถ้าไม่พอให้ปัดลง */
+    .btn-approve, .btn-reject {
+        font-size: 11px;   /* ย่อปุ่มกดในตาราง */
+        padding: 3px 6px;
     }
+
+    /* 5. ปรับกล่องโควต้าวันลา */
+    .quota-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* เรียง 2 กล่องคู่กัน */
+        gap: 10px;
+    }
+    
     .quota-box {
-        min-width: 45%;      /* ให้เรียง 2 กล่องต่อแถวได้ */
+        padding: 10px;
+    }
+    
+    .quota-box h3 {
+        font-size: 0.9rem;
+    }
+    
+    .quota-box .days {
+        font-size: 1.5rem; /* ย่อตัวเลขวันลา */
     }
 }
