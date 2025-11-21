@@ -39,23 +39,24 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (สูตรแก้ Timeout: ใช้ Port 587 + บังคับ IPv4) === */
+/* === 3. EMAIL TRANSPORTER (สูตรสมบูรณ์: ใช้ Environment Variables + แก้ Timeout) === */
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,                 // เปลี่ยนมาใช้ 587 (TLS) ซึ่งปัญหาน้อยกว่าบน Cloud
-    secure: false,             // สำหรับ Port 587 ต้องเป็น false
-    requireTLS: true,          // บังคับใช้การเข้ารหัส
+    port: 587,
+    secure: false, // ต้องเป็น false สำหรับ port 587
+    requireTLS: true,
     auth: {
-        user: 'preyapanngam2004@gmail.com', 
-        pass: 'cptb uofw usdf hqiq' 
+        // ดึงค่าจาก Render (ที่คุณเพิ่งกรอกไป)
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS
     },
-    // [สำคัญมาก] การตั้งค่าเพื่อแก้ปัญหา Network Timeout
     tls: {
-        ciphers: 'SSLv3',      // ช่วยเรื่องการเข้ารหัสรุ่นเก่า
+        ciphers: 'SSLv3',
         rejectUnauthorized: false
     },
-    family: 4,                 // **ไม้ตาย:** บังคับใช้ IPv4 เท่านั้น (แก้ปัญหา Render หา Gmail ไม่เจอ)
-    connectionTimeout: 10000   // รอ 10 วินาที
+    // [สำคัญมาก] บรรทัดนี้ช่วยให้ Render หา Gmail เจอ
+    family: 4,                 
+    connectionTimeout: 10000   
 });
 
 
@@ -287,5 +288,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
 
 
