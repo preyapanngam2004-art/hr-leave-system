@@ -50,7 +50,7 @@ const pool = mysql.createPool({
 /* === 3. EMAIL TRANSPORTER (แก้ไขเพื่อใช้ Brevo SMTP + แก้ Timeout บน Render) === */
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
+    port: 2525,
     secure: false,
     auth: {
         user: '9c2dfe001@smtp-brevo.com',
