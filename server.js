@@ -47,15 +47,22 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (แก้ไขเพื่อใช้ Brevo SMTP) === */
+/* === 3. EMAIL TRANSPORTER (แก้ไขเพื่อใช้ Brevo SMTP + แก้ Timeout บน Render) === */
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',  // Host ของ Brevo
-    port: 587,                     // Port ของ Brevo
-    secure: false,                 // ใช้ false สำหรับ port 587
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
     auth: {
-        user: '9c2dfe001@smtp-brevo.com', // หรือ process.env.EMAIL_USER ถ้าคุณตั้งไว้
-        pass: smtpPassword // <--- แก้เป็นคำนี้
-    }
+        user: '9c2dfe001@smtp-brevo.com',
+        pass: smtpPassword 
+    },
+    // --- เพิ่ม 4 บรรทัดนี้ เพื่อแก้ปัญหา Render เชื่อมต่อ Brevo ไม่ได้ ---
+    tls: {
+        ciphers: 'SSLv3'
+    },
+    connectionTimeout: 10000, // รอการเชื่อมต่อสูงสุด 10 วินาที
+    greetingTimeout: 5000,    // รอคำตอบรับ 5 วินาที
+    family: 4                 // *** สำคัญมาก! บังคับให้ใช้ IPv4 (แก้ Error Timeout) ***
 });
 /* === SETUP MULTER (จัดการอัปโหลดไฟล์) === */
 const storage = multer.diskStorage({
