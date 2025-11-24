@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>เข้าสู่ระบบ - ระบบลางานออนไลน์</title>
+    <link rel="stylesheet" href="style.css"> 
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>ระบบลางานออนไลน์</h2>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">ชื่อผู้ใช้ (Username)</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">รหัสผ่าน (Password)</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit" class="btn">เข้าสู่ระบบ</button>
+        </form>
+    </div>
+
+<script>
+    // [!! นี่คือ Base URL ที่แก้ไขแล้ว: ใช้ Public URL ของ ngrok (HTTPS) !!]
+    // โค้ดนี้จะใช้ได้ก็ต่อเมื่อ ngrok กำลังรันอยู่บนคอมพิวเตอร์ของคุณ
+    const API_BASE_URL = '';
+    const manager = JSON.parse(localStorage.getItem('user'));
+
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); 
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            // ใช้ API_BASE_URL ที่แก้ไขแล้วในการเรียก API
+            const response = await fetch(`${API_BASE_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (response.status === 401) {
+                // จัดการเมื่อชื่อผู้ใช้/รหัสผ่านไม่ถูกต้อง (401 Unauthorized)
+                alert(result.message || 'ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง');
+                return;
+            }
+            
+            if (!response.ok) {
+                // จัดการข้อผิดพลาด HTTP อื่น ๆ 
+                throw new Error(result.message || `HTTP Error: ${response.status}`);
+            }
+
+            if (result.success) {
+                alert('เข้าสู่ระบบสำเร็จ!');
+                localStorage.setItem('user', JSON.stringify(result.user));
+                
+                if (result.user.Manager_ID === null) {
+                    window.location.href = './manager.html'; 
+                } else {
+                    window.location.href = './dashboard.html'; 
+                }
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error('Login Error:', error);
+            // แสดงข้อความที่ชัดเจนขึ้นเมื่อการเชื่อมต่อล้มเหลว
+            alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า Node.js และ ngrok รันอยู่'); 
+        }
+    });
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>แดชบอร์ด - ระบบลางานออนไลน์</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo">ระบบลางาน (พนักงาน)</div>
+        <nav>
+            <a href="dashboard.html">หน้าหลัก</a>
+            <a href="#" id="navUsername">(กำลังโหลด...)</a>
+            <a href="login.html" onclick="localStorage.clear()">ออกจากระบบ</a>
+        </nav>
+    </div>
+
+    <div class="container">
+
+        <div class="card">
+            <div class="card-header">
+                <h2>โควต้าวันลาคงเหลือ</h2>
+            </div>
+            <div class="quota-container" id="quotaContainer">
+                <p style="text-align: center; width: 100%;">กำลังโหลดโควต้า...</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>ประวัติการลาของคุณ</h2>
+                <a href="#" class="btn-primary" id="openLeaveModalBtn">ยื่นใบลา</a>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ประเภทการลา</th>
+                            <th>วันที่เริ่ม</th>
+                            <th>วันที่สิ้นสุด</th>
+                            <th>เหตุผล</th>
+                            <th>สถานะ</th>
+                            <th>ไฟล์แนบ</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr><td colspan="6" style="text-align: center;">กำลังโหลดประวัติ...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+    </div>
+
+    <div class="modal-overlay" id="leaveModal">
+        <div class="modal-content">
+            <h2>ยื่นใบลา</h2>
+            
+            <form id="leaveForm">
+                <div class="form-group">
+                    <label for="leaveType">ประเภทการลา</label>
+                    <select id="leaveType" name="leaveType" required>
+                        <option value="">-- กรุณาเลือก --</option>
+                        <option value="1">ลาป่วย</option>
+                        <option value="2">ลากิจ</option>
+                        <option value="3">ลาพักร้อน</option>
+                        <option value="4" id="maternityLeaveOption" style="display:none;">ลาคลอด</option>
+                        <option value="5" id="ordinationLeaveOption" style="display:none;">ลาบวช</option>
+                        <option value="6" id="militaryLeaveOption" style="display:none;">ลาเกณฑ์ทหาร</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="startDate">วันที่เริ่มลา</label>
+                    <input type="date" id="startDate" name="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="endDate">วันที่สิ้นสุด</label>
+                    <input type="date" id="endDate" name="endDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="reason">เหตุผลการลา</label>
+                    <textarea id="reason" name="reason" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="attachmentFile">แนบไฟล์ (ถ้ามี)</label>
+                    <input type="file" id="attachmentFile" name="attachmentFile">
+                </div>
+
+                <button type="submit" class="btn" id="submitLeaveBtn">ส่งใบลา</button>
+                <button type="button" class="btn" id="closeLeaveModalBtn" style="background-color: #6c757d; margin-top: 10px;">ยกเลิก</button>
+            </form>
+        </div>
+    </div>
+
+<script>
+    // [!! แก้ไขแล้ว: กำหนด Base URL เป็น IP จริงเพื่อแก้ปัญหาการเชื่อมต่อจากโทรศัพท์ !!]
+   // [!! แทนที่ด้วย URL สาธารณะจาก ngrok ของคุณที่ได้มา !!]
+    const API_BASE_URL = '';
+    const employee = JSON.parse(localStorage.getItem('user'));
+
+    // --- (A) เมื่อหน้าเว็บโหลดเสร็จ ---
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!employee || employee.Manager_ID === null) { 
+            alert('กรุณาเข้าสู่ระบบด้วยบัญชีพนักงาน');
+            window.location.href = './login.html'; 
+            return;
+        }
+        document.getElementById('navUsername').textContent = `${employee.FirstName} ${employee.LastName}`;
+        loadLeaveHistory(employee.Emp_ID);
+        loadLeaveQuotas(employee.Emp_ID); 
+    });
+
+    // --- (B) ฟังก์ชันโหลดประวัติการลา ---
+    async function loadLeaveHistory(empId) {
+        const tableBody = document.getElementById('historyTableBody');
+        try {
+            // [แก้ไขแล้ว]: เปลี่ยน localhost เป็น API_BASE_URL
+            const response = await fetch(`${API_BASE_URL}/api/leave-history/${empId}`);
+            if (!response.ok) throw new Error('Failed to fetch');
+            const history = await response.json();
+            
+            tableBody.innerHTML = '';
+            if (history.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">ไม่พบประวัติการลา</td></tr>';
+                return;
+            }
+
+            history.forEach(r => {
+                let statusText = '', statusColor = '';
+                if (r.Status === 'Approved') { statusText = 'อนุมัติแล้ว'; statusColor = 'green'; }
+                else if (r.Status === 'Rejected') { statusText = 'ไม่อนุมัติ'; statusColor = 'red'; }
+                else { statusText = 'รออนุมัติ'; statusColor = 'orange'; }
+
+                let fileLink = '-';
+                if (r.AttachmentFile) {
+                    // [แก้ไขแล้ว]: เปลี่ยน localhost ในลิงก์ไฟล์แนบ
+                    fileLink = `<a href="${API_BASE_URL}/uploads/${r.AttachmentFile}" target="_blank">ดูไฟล์</a>`;
+                }
+
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${r.TypeName}</td>
+                        <td>${new Date(r.StartDate).toLocaleDateString('th-TH')}</td>
+                        <td>${new Date(r.EndDate).toLocaleDateString('th-TH')}</td>
+                        <td>${r.Reason || '-'}</td>
+                        <td><span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></td>
+                        <td>${fileLink}</td>
+                    </tr>`;
+            });
+        } catch (error) {
+            console.error('Fetch History Error:', error);
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">ไม่สามารถโหลดประวัติได้</td></tr>';
+        }
+    }
+
+    // --- (C) ฟังก์ชันโหลดโควต้า (ฉบับ Dynamic) ---
+    async function loadLeaveQuotas(empId) {
+        const quotaContainer = document.getElementById('quotaContainer');
+        quotaContainer.innerHTML = ''; // (ล้างกล่องเก่า)
+        try {
+            // [แก้ไขแล้ว]: เปลี่ยน localhost เป็น API_BASE_URL
+            const response = await fetch(`${API_BASE_URL}/api/quotas/${empId}`);
+            if (!response.ok) throw new Error('Failed to fetch quotas');
+            
+            const quotas = await response.json(); // (รับมาเป็น Array)
+
+            if (quotas.length === 0) {
+                quotaContainer.innerHTML = '<p style="text-align: center; width: 100%;">ไม่พบข้อมูลโควต้าวันลาสำหรับปีนี้</p>';
+                return;
+            }
+
+            // (วนลูปสร้างกล่องโควต้าอัตโนมัติ)
+            quotas.forEach(q => {
+                const quotaBox = document.createElement('div');
+                quotaBox.className = 'quota-box';
+                quotaBox.innerHTML = `
+                    <h3>${q.TypeName}</h3>
+                    <div class="days">${parseFloat(q.RemainingDays)}</div>
+                    <span>วัน</span>
+                `;
+                quotaContainer.appendChild(quotaBox);
+            });
+
+        } catch (error) {
+            console.error('Fetch Quotas Error:', error);
+            quotaContainer.innerHTML = '<p style="text-align: center; width: 100%;">ไม่สามารถโหลดข้อมูลโควต้าได้</p>';
+        }
+    }
+
+    // --- (D) ส่วนจัดการ Modal (เปิด/ปิด) ---
+    const modal = document.getElementById('leaveModal');
+    const openBtn = document.getElementById('openLeaveModalBtn');
+    const closeBtn = document.getElementById('closeLeaveModalBtn');
+    
+    // (ตรรกะเช็คเพศที่ถูกต้อง)
+    openBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        
+        const maternityOption = document.getElementById('maternityLeaveOption');
+        const ordinationOption = document.getElementById('ordinationLeaveOption');
+        const militaryOption = document.getElementById('militaryLeaveOption');
+
+        maternityOption.style.display = 'none';
+        ordinationOption.style.display = 'none';
+        militaryOption.style.display = 'none';
+
+        if (currentUser && currentUser.Gender === 'หญิง') {
+            maternityOption.style.display = 'block';
+        } else if (currentUser && currentUser.Gender === 'ชาย') {
+            ordinationOption.style.display = 'block';
+            militaryOption.style.display = 'block';
+        }
+        
+        modal.style.display = 'block';
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        leaveForm.reset(); 
+    });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            leaveForm.reset();
+        }
+    });
+
+    // --- (E) ส่วนส่งฟอร์ม (Submit) (ฉบับ FormData) ---
+    const leaveForm = document.getElementById('leaveForm');
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    
+    leaveForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); 
+        submitBtn.disabled = true; 
+        submitBtn.textContent = 'กำลังส่ง...';
+
+        const formData = new FormData(leaveForm);
+        formData.append('empId', employee.Emp_ID);
+        formData.append('managerId', employee.Manager_ID); // ต้องมี Manager ID สำหรับการอนุมัติ
+        
+        try {
+            // [แก้ไขแล้ว]: เปลี่ยน localhost เป็น API_BASE_URL
+            const response = await fetch(`${API_BASE_URL}/api/submit-leave`, {
+                method: 'POST',
+                body: formData 
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('ส่งใบลาสำเร็จ!'); 
+                modal.style.display = 'none';
+                leaveForm.reset();
+                loadLeaveHistory(employee.Emp_ID); // โหลดประวัติและโควต้าใหม่เมื่อส่งสำเร็จ
+                loadLeaveQuotas(employee.Emp_ID); 
+            } else {
+                alert('เกิดข้อผิดพลาด: ' + result.message); 
+            }
+        } catch (error) {
+            console.error('Submit Error:', error);
+            alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+        } finally {
+            submitBtn.disabled = false; 
+            submitBtn.textContent = 'ส่งใบลา';
+        }
+    });
+</script>
+
+</body>
+
+</html>

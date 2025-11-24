@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>สรุปรายงาน - ระบบลางานออนไลน์</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo">ระบบลางาน (รายงาน)</div>
+        <nav>
+            <a href="manager.html">รายการอนุมัติ</a>
+            <a href="report.html">ดูรายงานทีม</a>
+            <a href="#" id="navUsername">(กำลังโหลด...)</a>
+            <a href="login.html" onclick="localStorage.clear()">ออกจากระบบ</a>
+        </nav>
+    </div>
+
+    <div class="container">
+
+        <div class="card">
+            <div class="card-header">
+                <h2>ตัวกรองรายงาน</h2>
+            </div>
+            
+            <form class="filter-container" id="reportFilterForm">
+                <div class="form-group">
+                    <label for="f_date_start">วันที่เริ่ม (ของใบลา)</label>
+                    <input type="date" id="f_date_start">
+                </div>
+                <div class="form-group">
+                    <label for="f_date_end">วันที่สิ้นสุด (ของใบลา)</label>
+                    <input type="date" id="f_date_end">
+                </div>
+                <div class="form-group">
+                    <label for="f_dept">แผนก</label>
+                    <select id="f_dept">
+                        <option value="">ทุกแผนก</option>
+                        <option value="1">IT</option>
+                        <option value="2">Sales</option>
+                        <option value="3">HR</option>
+                        <option value="4">ผู้บริหาร</option>
+                        <option value="5">หัวหน้าIT</option>
+                        <option value="6">หัวหน้าSale</option>
+                        <option value="7">หัวหน้าHR</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="f_leave_type">ประเภทการลา</label>
+                    <select id="f_leave_type">
+                        <option value="">ทุกประเภท</option>
+                        <option value="1">ลาป่วย</option>
+                        <option value="2">ลากิจ</option>
+                        <option value="3">ลาพักร้อน</option>
+                        <option value="4">ลาคลอด</option>
+                        <option value="5">ลาบวช</option>
+                        <option value="6">ลาเกณฑ์ทหาร</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="f_status">สถานะ</label>
+                    <select id="f_status">
+                        <option value="">ทุกสถานะ</option>
+                        <option value="Pending">รออนุมัติ</option>
+                        <option value="Approved">อนุมัติแล้ว</option>
+                        <option value="Rejected">ปฏิเสธ</option>
+                    </select>
+                </div>
+                 <div class="form-group" style="align-self: flex-end;">
+                    <button type="submit" class="btn">สร้างรายงาน</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>ตารางสรุปผล</h2>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>พนักงาน</th>
+                            <th>แผนก</th>
+                            <th>ประเภทการลา</th>
+                            <th>วันที่เริ่ม</th>
+                            <th>วันที่สิ้นสุด</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center;">กรุณากดสร้างรายงาน</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+    </div>
+
+<script>
+    // [!! แก้ไขแล้ว: กำหนด Base URL เป็น IP จริงเพื่อแก้ปัญหาการเชื่อมต่อจากโทรศัพท์ !!]
+    // [!! แทนที่ด้วย URL สาธารณะจาก ngrok ของคุณที่ได้มา !!]
+    const API_BASE_URL = '';
+    const manager = JSON.parse(localStorage.getItem('user'));
+
+    // --- (A) เมื่อหน้าเว็บโหลดเสร็จ ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. ตรวจสอบสิทธิ์ (ถ้าไม่ใช่หัวหน้า ให้เด้งกลับ)
+        if (!manager || manager.Manager_ID !== null) { 
+            alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+            window.location.href = './login.html'; 
+            return;
+        }
+        
+        // 2. แสดงชื่อหัวหน้า
+        document.getElementById('navUsername').textContent = `(หัวหน้า) ${manager.FirstName}`;
+    });
+
+    // --- (B) เมื่อฟอร์มตัวกรองถูกส่ง ---
+    document.getElementById('reportFilterForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); 
+
+        const tableBody = document.getElementById('reportTableBody');
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>';
+        
+        // 1. รวบรวมค่าจากฟอร์ม
+        const params = new URLSearchParams();
+        if (document.getElementById('f_date_start').value) params.append('startDate', document.getElementById('f_date_start').value);
+        if (document.getElementById('f_date_end').value) params.append('endDate', document.getElementById('f_date_end').value);
+        if (document.getElementById('f_dept').value) params.append('deptId', document.getElementById('f_dept').value);
+        if (document.getElementById('f_leave_type').value) params.append('leaveTypeId', document.getElementById('f_leave_type').value);
+        if (document.getElementById('f_status').value) params.append('status', document.getElementById('f_status').value);
+
+        try {
+            // 2. เรียก API 6 (api/report) จาก server.js
+            // [แก้ไขแล้ว]: เปลี่ยน localhost เป็น API_BASE_URL
+            const response = await fetch(`${API_BASE_URL}/api/report?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch');
+
+            const reportData = await response.json();
+            
+            tableBody.innerHTML = ''; 
+
+            if (reportData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">ไม่พบข้อมูลตามเงื่อนไข</td></tr>';
+                return;
+            }
+
+            // 3. วนลูปสร้างตาราง
+            reportData.forEach(r => {
+                let statusColor = '';
+                if (r.Status === 'Approved') statusColor = 'green';
+                else if (r.Status === 'Rejected') statusColor = 'red';
+                else statusColor = 'orange';
+                
+                // (ถ้ามีไฟล์แนบ จะสร้างลิงก์สำหรับดาวน์โหลด/ดูไฟล์)
+                let fileLink = ''; 
+                if (r.AttachmentFile) {
+                    fileLink = `<a href="${API_BASE_URL}/uploads/${r.AttachmentFile}" target="_blank">ดูไฟล์</a>`;
+                }
+
+
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${r.FirstName} ${r.LastName}</td>
+                        <td>${r.DeptName}</td>
+                        <td>${r.TypeName}</td>
+                        <td>${new Date(r.StartDate).toLocaleDateString('th-TH')}</td>
+                        <td>${new Date(r.EndDate).toLocaleDateString('th-TH')}</td>
+                        <td><span style="color: ${statusColor}; font-weight: bold;">${r.Status}</span> ${fileLink}</td>
+                    </tr>
+                `;
+            });
+
+        } catch (error) {
+            console.error('Error fetching report:', error);
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">ไม่สามารถโหลดรายงานได้ (Backend API อาจมีปัญหา)</td></tr>';
+        }
+    });
+</script>
+
+</body>
+
+</html>
