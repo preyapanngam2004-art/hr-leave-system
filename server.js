@@ -1,7 +1,14 @@
 /* === 1. SETUP (ตั้งค่า) === */
 const express = require('express');
 const mysql = require('mysql2/promise');
-const myKey = require('./key.json');
+/* === โหลดรหัสลับ (รองรับทั้งในเครื่อง และบน Render) === */
+let smtpPassword;
+try {
+    const myKey = require('./key.json'); // ลองหาไฟล์ในเครื่อง
+    smtpPassword = myKey.secret;
+} catch (error) {
+    smtpPassword = process.env.SMTP_KEY; // ถ้าไม่เจอไฟล์ (บน Render) ให้ใช้ค่าจากระบบ
+}
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const multer = require('multer'); 
@@ -46,8 +53,8 @@ const transporter = nodemailer.createTransport({
     port: 587,                     // Port ของ Brevo
     secure: false,                 // ใช้ false สำหรับ port 587
     auth: {
-        user: '9c2dfe001@smtp-brevo.com', // Login (ตามรูปที่คุณส่งมา)
-        pass: myKey.secret // *** เอา SMTP Key ที่กด Generate มาใส่ตรงนี้ ***
+        user: '9c2dfe001@smtp-brevo.com', // หรือ process.env.EMAIL_USER ถ้าคุณตั้งไว้
+        pass: smtpPassword // <--- แก้เป็นคำนี้
     }
 });
 /* === SETUP MULTER (จัดการอัปโหลดไฟล์) === */
