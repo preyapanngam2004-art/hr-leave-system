@@ -48,21 +48,13 @@ const pool = mysql.createPool({
 });
 
 /* === 3. EMAIL TRANSPORTER (แก้ไขเพื่อใช้ Brevo SMTP + แก้ Timeout บน Render) === */
+/* === 3. EMAIL TRANSPORTER (ใช้ Gmail App Password) === */
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 456,
-    secure: true,
+    service: 'gmail',  // ใช้ Service ของ Gmail โดยตรง (ไม่ต้องตั้ง Port)
     auth: {
-        user: '9c2dfe001@smtp-brevo.com',
-        pass: smtpPassword 
-    },
-    // --- เพิ่ม 4 บรรทัดนี้ เพื่อแก้ปัญหา Render เชื่อมต่อ Brevo ไม่ได้ ---
-    tls: {
-        ciphers: 'SSLv3'
-    },
-    connectionTimeout: 10000, // รอการเชื่อมต่อสูงสุด 10 วินาที
-    greetingTimeout: 5000,    // รอคำตอบรับ 5 วินาที
-    family: 4                 // *** สำคัญมาก! บังคับให้ใช้ IPv4 (แก้ Error Timeout) ***
+        user: 'preyapanngam2004@gmail.com', // อีเมลของคุณ
+        pass: smtpPassword // มันจะไปดึงรหัส tpec... มาจาก Render เอง
+    }
 });
 /* === SETUP MULTER (จัดการอัปโหลดไฟล์) === */
 const storage = multer.diskStorage({
