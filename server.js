@@ -48,12 +48,14 @@ const pool = mysql.createPool({
 });
 
 /* === 3. EMAIL TRANSPORTER (แก้ไขเพื่อใช้ Brevo SMTP + แก้ Timeout บน Render) === */
-/* === 3. EMAIL TRANSPORTER (ใช้ Gmail App Password) === */
+/* === 3. EMAIL TRANSPORTER (ใช้ Gmail 100% - ลบของ Brevo ทิ้งให้หมด) === */
 const transporter = nodemailer.createTransport({
-    service: 'gmail',  // ใช้ Service ของ Gmail โดยตรง (ไม่ต้องตั้ง Port)
+    host: 'smtp.gmail.com',  // <--- เปลี่ยนเป็น Server ของ Gmail
+    port: 465,               // <--- ใช้ Port 465 (เสถียรสุดบน Render)
+    secure: true,            // <--- ต้องเปิดความปลอดภัย
     auth: {
         user: 'preyapanngam2004@gmail.com', // อีเมลของคุณ
-        pass: smtpPassword // มันจะไปดึงรหัส tpec... มาจาก Render เอง
+        pass: smtpPassword   // (มันจะไปดึงรหัส tpec... จาก Render เอง)
     }
 });
 /* === SETUP MULTER (จัดการอัปโหลดไฟล์) === */
