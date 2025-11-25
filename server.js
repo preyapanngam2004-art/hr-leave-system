@@ -1,19 +1,14 @@
 /* === 1. SETUP (ตั้งค่า) === */
 const express = require('express');
 const mysql = require('mysql2/promise');
-/* === โหลดรหัสลับ (รองรับทั้งในเครื่อง และบน Render) === */
-let smtpPassword;
-try {
-    const myKey = require('./key.json'); // ลองหาไฟล์ในเครื่อง
-    smtpPassword = myKey.secret;
-} catch (error) {
-    smtpPassword = process.env.SMTP_KEY; // ถ้าไม่เจอไฟล์ (บน Render) ให้ใช้ค่าจากระบบ
-}
 const cors = require('cors');
-const nodemailer = require('nodemailer');
 const multer = require('multer'); 
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios'); // ตัวช่วยส่งแจ้งเตือนเข้า Discord
+
+// --- ⚠️ ส่วนตั้งค่า DISCORD (สำคัญ) ---
+const DISCORD_WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1442683087795261562/p6kqq-gxCY5zwg5WR8Gw7rzcCj5Gdfvqi39le9E3xprM9rEm3BNUInH14fjEnWYZ4Cy3'; 
 
 const app = express();
 app.use(cors());
@@ -35,30 +30,20 @@ app.get('/', (req, res) => {
 }); 
 
 
-/* === 2. DATABASE CONNECTION (Clever Cloud) === */
+/* === 2. DATABASE CONNECTION (ใช้ Clever Cloud เพื่อให้ Render มองเห็น) === */
 const pool = mysql.createPool({
     host: 'beo7a5e1cdpfctprqfrk-mysql.services.clever-cloud.com',
-    user: 'utbsrjivbaog6owj',  // <--- แก้กลับเป็น User ของ Clever Cloud (จากรูปเก่า)
-    password: 'sSoDsDIaDFdD6Ifl0Y4t', // รหัสผ่าน DB (อันเดิมถูกแล้ว)
+    user: 'utbsrjivbaog6owj',
+    password: 'sSoDsDIaDFdD6Ifl0Y4t',
     database: 'beo7a5e1cdpfctprqfrk',
-    port: 3306, // <--- ต้องใช้ 3306 สำหรับ MySQL (ห้ามใช้ 587)
+    port: 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-/* === 3. EMAIL TRANSPORTER (แก้ไขเพื่อใช้ Brevo SMTP + แก้ Timeout บน Render) === */
-/* === 3. EMAIL TRANSPORTER (ใช้ Gmail 100% - ลบของ Brevo ทิ้งให้หมด) === */
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',  // <--- เปลี่ยนเป็น Server ของ Gmail
-    port: 465,               // <--- ใช้ Port 465 (เสถียรสุดบน Render)
-    secure: true,            // <--- ต้องเปิดความปลอดภัย
-    auth: {
-        user: 'preyapanngam2004@gmail.com', // อีเมลของคุณ
-        pass: smtpPassword   // (มันจะไปดึงรหัส tpec... จาก Render เอง)
-    }
-});
-/* === SETUP MULTER (จัดการอัปโหลดไฟล์) === */
+
+/* === 3. SETUP MULTER (จัดการอัปโหลดไฟล์) === */
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/');
@@ -115,7 +100,7 @@ app.get('/api/pending-requests/:managerId', async (req, res) => {
     }
 });
 
-// --- API 3: Approve/Reject (แก้ให้ส่งเมลเบื้องหลัง) ---
+// --- API 3: Approve/Reject (ส่งแจ้งเตือนเข้า Discord) ---
 app.post('/api/process-request', async (req, res) => {
     const { requestId, newStatus } = req.body; 
     try {
@@ -125,14 +110,14 @@ app.post('/api/process-request', async (req, res) => {
             [newStatus, requestId]
         );
 
-        // 2. ตอบกลับทันที (ไม่รอเมล)
+        // 2. ตอบกลับหน้าเว็บทันที
         res.json({ message: `ดำเนินการ "${newStatus}" สำเร็จ` });
 
-        // 3. ส่งเมลเบื้องหลัง
+        // 3. ส่งแจ้งเตือนเข้า Discord
         (async () => {
             try {
                 const [rows] = await pool.query(`
-                    SELECT e.Email, e.FirstName, lt.TypeName
+                    SELECT e.FirstName, lt.TypeName
                     FROM leaverequests lr
                     JOIN employees e ON lr.Emp_ID = e.Emp_ID
                     JOIN leavetypes lt ON lr.LeaveType_ID = lt.LeaveType_ID
@@ -141,16 +126,18 @@ app.post('/api/process-request', async (req, res) => {
 
                 if (rows.length > 0) {
                     const employee = rows[0];
+                    const statusIcon = newStatus === 'Approved' ? '✅' : '❌';
                     const statusInThai = newStatus === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ';
-                    await transporter.sendMail({
-                        from: '"ระบบลางาน" <preyapanngam2004@gmail.com>', 
-                        to: employee.Email, 
-                        subject: `[ผลการอนุมัติ] ใบลาของคุณ "${statusInThai}" แล้ว`,
-                        html: `<h3>เรียน คุณ ${employee.FirstName},</h3><p>ใบลา (${employee.TypeName}) ของคุณ ได้รับการ <strong>${statusInThai}</strong> แล้ว</p>`
-                    });
-                    console.log('Email sent to employee');
+
+                    // ข้อความที่จะส่งเข้า Discord
+                    const discordMessage = {
+                        content: `${statusIcon} **ผลการพิจารณาใบลา**\n👤 **ชื่อ:** ${employee.FirstName}\n📋 **สถานะ:** ${statusInThai}\n📄 **ประเภท:** ${employee.TypeName}`
+                    };
+
+                    await axios.post(DISCORD_WEBHOOK_URL, discordMessage);
+                    console.log('แจ้งเตือน Discord สำเร็จ');
                 }
-            } catch (err) { console.error('Email Error:', err); }
+            } catch (err) { console.error('Discord Error:', err.message); }
         })();
 
     } catch (error) {
@@ -160,7 +147,7 @@ app.post('/api/process-request', async (req, res) => {
 });
 
 
-// --- API 4: Submit Leave (แก้ให้ส่งเมลเบื้องหลัง) ---
+// --- API 4: Submit Leave (ส่งแจ้งเตือนเข้า Discord) ---
 app.post('/api/submit-leave', upload.single('attachmentFile'), async (req, res) => {
     
     const { empId, leaveType, startDate, endDate, reason, managerId } = req.body;
@@ -182,28 +169,26 @@ app.post('/api/submit-leave', upload.single('attachmentFile'), async (req, res) 
             [empId, leaveType, startDate, endDate, reason, managerId, attachmentPath]
         );
 
-        // 2. ตอบกลับทันที (ไม่รอเมล)
+        // 2. ตอบกลับหน้าเว็บทันที
         res.json({ message: 'ส่งใบลาสำเร็จ!' });
 
-        // 3. ส่งเมลหาหัวหน้าเบื้องหลัง
+        // 3. ส่งแจ้งเตือนเข้า Discord
         (async () => {
             try {
-                const [approverRows] = await pool.query("SELECT Email, FirstName FROM employees WHERE Emp_ID = ?", [managerId]);
                 const [employeeRows] = await pool.query("SELECT FirstName, LastName FROM employees WHERE Emp_ID = ?", [empId]);
                 
-                if (approverRows.length > 0 && employeeRows.length > 0) {
-                    const approver = approverRows[0];
+                if (employeeRows.length > 0) {
                     const employeeName = `${employeeRows[0].FirstName} ${employeeRows[0].LastName}`;
                     
-                    await transporter.sendMail({
-                        from: '"ระบบลางาน" <preyapanngam2004@gmail.com>',
-                        to: approver.Email, 
-                        subject: `มีคำขออนุมัติใบลาใหม่จาก: ${employeeName}`,
-                        html: `<h3>เรียน คุณ ${approver.FirstName},</h3><p>มีคำขอใบลาใหม่จาก <strong>${employeeName}</strong> รอการอนุมัติ <br>กรุณาตรวจสอบในระบบ</p>`
-                    });
-                    console.log('Email sent to manager');
+                    // ข้อความที่จะส่งเข้า Discord
+                    const discordMessage = {
+                        content: `🔔 **มีคำขอใบลาใหม่!**\n👤 **จาก:** ${employeeName}\n📅 **วันที่:** ${startDate} ถึง ${endDate}\n📝 **เหตุผล:** ${reason}\n\n*กรุณาตรวจสอบในระบบเพื่ออนุมัติ*`
+                    };
+
+                    await axios.post(DISCORD_WEBHOOK_URL, discordMessage);
+                    console.log('แจ้งเตือน Discord สำเร็จ');
                 }
-            } catch (err) { console.error('Email Error:', err); }
+            } catch (err) { console.error('Discord Error:', err.message); }
         })();
 
     } catch (error) {
@@ -286,11 +271,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
