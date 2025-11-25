@@ -11,8 +11,8 @@ const axios = require('axios');
 const LINE_CHANNEL_ACCESS_TOKEN = '97hR08E0+Pbur/ocIwvN4a80dEycrLG7HNWox03G06akpdp9p1wA7/z++4gAROKwNDE4/LV/czWWgc67Yjv2ibku6V1rgcflAZumrFZKuFCMG4kmXOrV0MUtUo7ZGcxpM7C19S1bkYZfTYJgL1HMiAdB04t89/1O/w1cDnyilFU='; 
 
 // ตั้งค่าให้ส่งเข้ามือถือคุณ (ทั้งในฐานะหัวหน้า และ พนักงาน)
-const MANAGER_LINE_ID = 'U53244e85414f202101f1c53c435f644d6'; 
-const EMPLOYEE_TEST_ID = 'U53244e85414f202101f1c53c435f644d6'; 
+const MANAGER_LINE_ID = 'U53244e85414f202101f1c53c435f64d6'; 
+const EMPLOYEE_TEST_ID = 'U53244e85414f202101f1c53c435f64d6'; 
 
 const app = express();
 app.use(cors());
